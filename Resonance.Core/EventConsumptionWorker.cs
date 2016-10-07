@@ -24,26 +24,32 @@ namespace Resonance
         private readonly int _maxThreads;
 
         private readonly IEventConsumer _eventConsumer;
-        private readonly ILogger<EventConsumptionWorker> _logger;
         private readonly string _subscriptionName;
         private readonly Func<ConsumableEvent, Task<ConsumeResult>> _consumeAction;
+        private readonly Action<LogLevel, string> _logAction;
         private readonly int _visibilityTimeout;
 
         /// <summary>
         /// Instantiates a PollingTask
         /// </summary>
+        /// <param name="eventConsumer">IEventConsumer to be used to consume events</param>
         /// <param name="subscriptionName"></param>
+        /// <param name="consumeAction">Action that must be invoked for each event. Make sure it is thread-safe when parallelExecution is enabled!</param>
+        /// <param name="logAction">Action that must be invoked whenever there is something to log.</param>
+        /// <param name="visibilityTimeout">Number of seconds the business event must be locked</param>
         /// <param name="minBackOffDelayInMs">Minimum backoff delay in milliseconds. If 0, then processing will use up to 100% CPU!</param>
         /// <param name="maxBackOffDelayInMs">Maximum backoff delay in milliseconds. Backoff-delay will increment exponentially up until this value.</param>
         /// <param name="maxThreads"></param>
-        /// <param name="visibilityTimeout">Number of seconds the business event must be locked</param>
-        /// <param name="consumeAction">Action that must be invoked for each event. Make sure it is thread-safe when parallelExecution is enabled!</param>
         public EventConsumptionWorker(IEventConsumer eventConsumer, string subscriptionName,
-            Func<ConsumableEvent, Task<ConsumeResult>> consumeAction, int visibilityTimeout = 60,
-            ILogger<EventConsumptionWorker> logger = null,
-            int minBackOffDelayInMs = 1, int maxBackOffDelayInMs = 60000, int maxThreads = 1)
+            Func<ConsumableEvent, Task<ConsumeResult>> consumeAction,
+            Action<LogLevel, string> logAction = null,
+            int visibilityTimeout = 60,
+            int minBackOffDelayInMs = 1,
+            int maxBackOffDelayInMs = 60000,
+            int maxThreads = 1)
         {
             if (maxBackOffDelayInMs < minBackOffDelayInMs) throw new ArgumentOutOfRangeException("maxBackOffDelayInSeconds", "maxBackOffDelayInSeconds must be greater than minBackOffDelay");
+            if (consumeAction == null) throw new ArgumentNullException("consumeAction");
 
             this._minDelayInMs = minBackOffDelayInMs;
             this._maxDelayInMs = maxBackOffDelayInMs;
@@ -51,9 +57,9 @@ namespace Resonance
             this._maxThreads = maxThreads;
 
             this._eventConsumer = eventConsumer;
-            this._logger = logger;
             this._subscriptionName = subscriptionName;
             this._consumeAction = consumeAction;
+            this._logAction = logAction;
             this._visibilityTimeout = visibilityTimeout;
         }
 
@@ -396,26 +402,46 @@ namespace Resonance
         #region Logging helpers
         private void LogTrace(string text)
         {
-            if (_logger != null)
-                _logger.LogTrace(text);
+            if (_logAction != null)
+            {
+                TryLog(LogLevel.Trace, text, _logAction);
+            }
         }
 
         private void LogInformation(string text)
         {
-            if (_logger != null)
-                _logger.LogInformation(text);
+            if (_logAction != null)
+                TryLog(LogLevel.Information, text, _logAction);
         }
 
         private void LogError(string text)
         {
-            if (_logger != null)
-                _logger.LogError(text);
+            if (_logAction != null)
+                TryLog(LogLevel.Error, text, _logAction);
         }
 
         private void LogWarning(string text)
         {
-            if (_logger != null)
-                _logger.LogWarning(text);
+            if (_logAction != null)
+                TryLog(LogLevel.Warning, text, _logAction);
+        }
+
+        private bool TryLog(LogLevel level, string text, Action<LogLevel, string> _logAction)
+        {
+            try
+            {
+                _logAction(level, text);
+                return true;
+            }
+#pragma warning disable 168
+            catch (Exception ex)
+            {
+#if NET452
+                Trace.TraceError($"EventConsumptionWorker: Failed to log message, reason: {ex.Message}. Message to log: level={level}, message={text}.");
+#endif
+                return false;
+            }
+#pragma warning restore 168
         }
         #endregion
     }
