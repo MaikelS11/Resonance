@@ -31,6 +31,7 @@
     },
     "net452": {
       "dependencies": {
+        "Microsoft.Net.Http": "2.2.22",
         "MySql.Data": "6.9.9"
       }
     }

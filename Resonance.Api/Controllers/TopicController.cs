@@ -55,6 +55,25 @@ namespace Resonance.Api.Controllers
             }
         }
 
+        [HttpGet("{id:long}")]
+        [ProducesResponseType(typeof(Topic), 200)]
+        public async Task<IActionResult> GetTopic(Int64 id)
+        {
+            try
+            {
+                var topic = await _publisher.GetTopicAsync(id);
+                if (topic != null)
+                    return Ok(topic);
+                else
+                    return NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return StatusCode(500);
+            }
+        }
+
         [HttpPost]
         [ProducesResponseType(typeof(Topic), 200)]
         public async Task<IActionResult> Post([FromBody]Topic topic)

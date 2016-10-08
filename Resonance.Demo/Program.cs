@@ -13,6 +13,7 @@ using Resonance.Repo.Database;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Microsoft.Extensions.PlatformAbstractions;
+using Resonance.Repo.Api;
 
 namespace Resonance.Demo
 {
@@ -160,10 +161,17 @@ namespace Resonance.Demo
             //});
 
             // To use MySQL:
-            var connectionString = config.GetConnectionString("Resonance.MySql");
+            //var connectionString = config.GetConnectionString("Resonance.MySql");
+            //serviceCollection.AddTransient<IEventingRepoFactory>((p) =>
+            //{
+            //    return new MySqlEventingRepoFactory(connectionString);
+            //});
+
+            // To use Api:
+            var baseAddress = config["Resonance:Api:BaseAddress"];
             serviceCollection.AddTransient<IEventingRepoFactory>((p) =>
             {
-                return new MySqlEventingRepoFactory(connectionString);
+                return new ApiRepoFactory(new Uri(baseAddress));
             });
 
             // Configure EventPublisher
