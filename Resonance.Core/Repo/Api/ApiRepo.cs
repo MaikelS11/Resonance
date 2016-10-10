@@ -8,7 +8,7 @@ using System.Net;
 
 namespace Resonance.Repo.Api
 {
-    public class ApiRepo : IEventingRepo
+    public class ApiRepo : BaseEventingRepo, IEventingRepo
     {
         //private readonly HttpMessageHandler _httpMessageHandler;
         private readonly Uri _baseAddress;
@@ -25,14 +25,14 @@ namespace Resonance.Repo.Api
         //    _httpMessageHandler = httpMessageHandler ?? new HttpMessageHandler();
         //}
 
-        public bool ParallelQueriesSupport { get { return true; } }
+        public override bool ParallelQueriesSupport { get { return true; } }
 
-        public Task<Subscription> AddOrUpdateSubscription(Subscription subscription)
+        public Task<Subscription> AddOrUpdateSubscriptionAsync(Subscription subscription)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<Topic> AddOrUpdateTopic(Topic topic)
+        public async Task<Topic> AddOrUpdateTopicAsync(Topic topic)
         {
             using (var httpClient = CreateHttpClient())
             {
@@ -48,67 +48,7 @@ namespace Resonance.Repo.Api
             }
         }
 
-        public Task<long> AddSubscriptionEvent(SubscriptionEvent subscriptionEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<long> AddTopicEvent(TopicEvent topicEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task BeginTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task CommitTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<ConsumableEvent>> ConsumeNext(string subscriptionName, int visibilityTimeout, int maxCount = 1)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> DeletePayload(long id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteSubscription(long id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteTopic(long id, bool inclSubscriptions)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<string> GetPayload(long id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Subscription> GetSubscription(long id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Subscription> GetSubscriptionByName(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Subscription>> GetSubscriptions(long? topicId = default(long?))
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<Topic> GetTopic(long id)
+        public async Task<Topic> GetTopicAsync(long id)
         {
             using (var httpClient = CreateHttpClient())
             {
@@ -126,7 +66,7 @@ namespace Resonance.Repo.Api
             }
         }
 
-        public async Task<Topic> GetTopicByName(string name)
+        public async Task<Topic> GetTopicByNameAsync(string name)
         {
             using (var httpClient = CreateHttpClient())
             {
@@ -143,34 +83,67 @@ namespace Resonance.Repo.Api
                 else
                     throw await ExceptionFor(response).ConfigureAwait(false);
             }
-
         }
 
-        public Task<IEnumerable<Topic>> GetTopics(string partOfName = null)
+        public Task<IEnumerable<Topic>> GetTopicsAsync(string partOfName = null)
         {
             throw new NotImplementedException();
         }
 
-        public Task MarkConsumed(long id, string deliveryKey)
+        public Task DeleteTopicAsync(long id, bool inclSubscriptions)
         {
             throw new NotImplementedException();
         }
 
-        public Task MarkFailed(long id, string deliveryKey, Reason reason)
+        public Task<IEnumerable<Subscription>> GetSubscriptionsAsync(long? topicId = default(long?))
         {
             throw new NotImplementedException();
         }
 
-        public Task RollbackTransaction()
+        public Task<Subscription> GetSubscriptionAsync(long id)
         {
             throw new NotImplementedException();
         }
 
-        public Task<long> StorePayload(string payload)
+        public Task<Subscription> GetSubscriptionByNameAsync(string name)
         {
             throw new NotImplementedException();
         }
 
+        public Task DeleteSubscriptionAsync(long id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<long> StorePayloadAsync(string payload)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<string> GetPayloadAsync(long id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> DeletePayloadAsync(long id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<ConsumableEvent>> ConsumeNextAsync(string subscriptionName, int visibilityTimeout, int maxCount = 1)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task MarkConsumedAsync(long id, string deliveryKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task MarkFailedAsync(long id, string deliveryKey, Reason reason)
+        {
+            throw new NotImplementedException();
+        }
 
 
         #region Helper methods
