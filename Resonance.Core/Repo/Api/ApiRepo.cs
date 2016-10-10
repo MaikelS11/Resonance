@@ -25,7 +25,7 @@ namespace Resonance.Repo.Api
         //    _httpMessageHandler = httpMessageHandler ?? new HttpMessageHandler();
         //}
 
-        public override bool ParallelQueriesSupport { get { return true; } }
+        protected override bool ParallelQueriesSupport { get { return true; } }
 
         public Task<Subscription> AddOrUpdateSubscriptionAsync(Subscription subscription)
         {
@@ -145,6 +145,33 @@ namespace Resonance.Repo.Api
             throw new NotImplementedException();
         }
 
+        protected override Task BeginTransactionAsync()
+        {
+#if NET452
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+        }
+
+        protected override Task CommitTransactionAsync()
+        {
+#if NET452
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+        }
+
+        protected override Task RollbackTransactionAsync()
+        {
+#if NET452
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
+        }
+
 
         #region Helper methods
         /// <summary>
@@ -190,9 +217,9 @@ namespace Resonance.Repo.Api
             httpClient.BaseAddress = _baseAddress;
             return httpClient;
         }
-        #endregion
+#endregion
 
-        #region IDisposable
+#region IDisposable
         private bool isDisposed = false;
 
         protected virtual void Dispose(bool disposing)
@@ -210,6 +237,6 @@ namespace Resonance.Repo.Api
         {
             Dispose(true);
         }
-        #endregion
+#endregion
     }
 }
