@@ -10,7 +10,7 @@ namespace Resonance.Repo.Api
 {
     public class ApiRepo : BaseEventingRepo, IEventingRepo
     {
-        //private readonly HttpMessageHandler _httpMessageHandler;
+        private readonly HttpMessageHandler _httpMessageHandler;
         private readonly Uri _baseAddress;
 
         public ApiRepo(Uri baseAddress)
@@ -19,11 +19,11 @@ namespace Resonance.Repo.Api
             _baseAddress = baseAddress;
         }
 
-        //public ApiRepo(Uri baseAddress, HttpMessageHandler httpMessageHandler)
-        //    : this(baseAddress)
-        //{
-        //    _httpMessageHandler = httpMessageHandler ?? new HttpMessageHandler();
-        //}
+        public ApiRepo(Uri baseAddress, HttpMessageHandler httpMessageHandler)
+            : this(baseAddress)
+        {
+            _httpMessageHandler = httpMessageHandler ?? new HttpClientHandler();
+        }
 
         protected override bool ParallelQueriesSupport { get { return true; } }
 
@@ -85,14 +85,50 @@ namespace Resonance.Repo.Api
             }
         }
 
-        public Task<IEnumerable<Topic>> GetTopicsAsync(string partOfName = null)
+        public async Task<IEnumerable<Topic>> GetTopicsAsync(string partOfName = null)
         {
-            throw new NotImplementedException();
+            var relativeUri = "topics";
+            if (!String.IsNullOrWhiteSpace(partOfName))
+                relativeUri += ("?partOfName=" + WebUtility.UrlEncode(partOfName));
+
+            using (var httpClient = CreateHttpClient())
+            {
+                var response = await httpClient.GetAsync(relativeUri).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (String.IsNullOrWhiteSpace(responseContent)) return null;
+                    return responseContent.FromJson<IEnumerable<Topic>>();
+                }
+                else if (response.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+                else
+                    throw await ExceptionFor(response).ConfigureAwait(false);
+            }
         }
 
-        public Task DeleteTopicAsync(long id, bool inclSubscriptions)
+        public async Task DeleteTopicAsync(long id, bool inclSubscriptions)
         {
-            throw new NotImplementedException();
+            var topic = await GetTopicAsync(id).ConfigureAwait(false);
+            if (topic == null)
+                throw new ArgumentException($"Topic with id {id} does not exist");
+
+            using (var httpClient = CreateHttpClient())
+            {
+                var response = await httpClient.DeleteAsync($"topics/{id}?inclSubscriptions={inclSubscriptions}").ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                    throw await ExceptionFor(response).ConfigureAwait(false);
+            }
+        }
+
+        protected override Task<Int64> AddTopicEventAsync(TopicEvent newTopicEvent)
+        {
+            return Task.FromResult(default(Int64));
+        }
+
+        protected override Task<Int64> AddSubscriptionEventAsync(SubscriptionEvent newSubscriptionEvent)
+        {
+            return Task.FromResult(default(Int64));
         }
 
         public Task<IEnumerable<Subscription>> GetSubscriptionsAsync(long? topicId = default(long?))
@@ -213,13 +249,13 @@ namespace Resonance.Repo.Api
 
         private HttpClient CreateHttpClient()
         {
-            var httpClient = new HttpClient();
+            var httpClient = new HttpClient(_httpMessageHandler);
             httpClient.BaseAddress = _baseAddress;
             return httpClient;
         }
-#endregion
+        #endregion
 
-#region IDisposable
+        #region IDisposable
         private bool isDisposed = false;
 
         protected virtual void Dispose(bool disposing)
@@ -237,6 +273,6 @@ namespace Resonance.Repo.Api
         {
             Dispose(true);
         }
-#endregion
+        #endregion
     }
 }
